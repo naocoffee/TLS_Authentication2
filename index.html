@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TLSハンドシェイク 5段階 並び替え＆アタック</title>
+<link rel="icon" href="data:,">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;700&family=Zen+Kaku+Gothic+New:wght@400;500;700;900&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="scanlines" aria-hidden="true"></div>
+
+<header class="briefing">
+  <div class="badge">SECURITY PATROL UNIT</div>
+  <h1>TLSハンドシェイク<span class="title-sub">5段階 並び替え＆実行者選択</span></h1>
+  <p class="mission">証拠カードを正しい順番に並べ、さらに各手順を「クライアント」と「サーバー」のどちらが実行するのかも選べ。<br>
+  順番を誤ったり実行者を取り違えたりすると、その隙をついて何者かが接続に侵入してくる——。</p>
+</header>
+
+<main class="patrol-floor">
+
+  <section class="panel tray-panel" aria-label="証拠カード置き場">
+    <div class="panel-head">
+      <h2>証拠カード</h2>
+      <span class="panel-note">カードをタップ→枠をタップで配置／配置後に実行者（クライアント／サーバー）も選択／ドラッグでも配置可</span>
+    </div>
+    <ul id="tray" class="tray" aria-live="polite"></ul>
+  </section>
+
+  <section class="panel timeline-panel" aria-label="通信タイムライン">
+    <div class="panel-head">
+      <h2>接続タイムライン</h2>
+      <div class="controls">
+        <button id="checkBtn" class="btn btn-primary" disabled>検証する</button>
+        <button id="resetBtn" class="btn btn-ghost">やり直す</button>
+      </div>
+    </div>
+    <ol id="slots" class="slots"></ol>
+  </section>
+
+  <section class="panel diagram-panel" aria-label="通信シミュレーション">
+    <div class="panel-head">
+      <h2>通信シミュレーション</h2>
+      <div id="statusChip" class="status-chip status-idle">待機中</div>
+    </div>
+
+    <div class="diagram" id="diagram">
+      <div class="node client">
+        <div class="node-icon">💻</div>
+        <div class="node-label">クライアント</div>
+      </div>
+
+      <div class="wire-area">
+        <svg id="wireSvg" viewBox="0 0 600 120" preserveAspectRatio="none" aria-hidden="true">
+          <line class="wire-base" x1="0" y1="60" x2="600" y2="60"></line>
+          <line id="wireActive" class="wire-active" x1="0" y1="60" x2="0" y2="60"></line>
+        </svg>
+        <div id="packet" class="packet">🔒</div>
+        <div id="attacker" class="attacker">
+          <div class="attacker-icon">🕵️</div>
+          <div class="attacker-tag" id="attackerTag">なりすまし</div>
+        </div>
+        <div id="lock" class="lock-indicator">🔓</div>
+      </div>
+
+      <div class="node server">
+        <div class="node-icon">🖥️</div>
+        <div class="node-label">サーバー</div>
+      </div>
+    </div>
+
+    <div id="reportArea" class="report-area" aria-live="polite"></div>
+  </section>
+
+  <section class="panel intel-panel" aria-label="ステップ解説">
+    <div class="panel-head">
+      <h2>捜査ファイル：5つの手順</h2>
+    </div>
+    <div id="intel" class="intel-grid"></div>
+  </section>
+
+</main>
+
+<footer class="foot-note">
+  <p>教材用シミュレーション教材／実際のTLSプロトコルを単純化して表現しています。</p>
+</footer>
+
+<script src="script.js"></script>
+</body>
+</html>
