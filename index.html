@@ -3,90 +3,275 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>TLSハンドシェイク 5段階 並び替え＆アタック</title>
-<link rel="icon" href="data:,">
+<title>HTTPS・TLSハンドシェイク体験シミュレーター</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🔐</text></svg>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;700&family=Zen+Kaku+Gothic+New:wght@400;500;700;900&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;500;700;900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-<div class="scanlines" aria-hidden="true"></div>
-
-<header class="briefing">
-  <div class="badge">SECURITY PATROL UNIT</div>
-  <h1>TLSハンドシェイク<span class="title-sub">5段階 並び替え＆実行者選択</span></h1>
-  <p class="mission">証拠カードを正しい順番に並べ、さらに各手順を「クライアント」と「サーバー」のどちらが実行するのかも選べ。<br>
-  順番を誤ったり実行者を取り違えたりすると、その隙をついて何者かが接続に侵入してくる——。</p>
+<header class="site-header">
+  <div class="header-inner">
+    <p class="kicker">情報Ⅰ｜ネットワークと情報システム</p>
+    <h1>通信、そのカギはどこにある？<br><span class="hl">TLSハンドシェイク体験シミュレーター</span></h1>
+    <p class="lede">あなたのブラウザとWebサーバーが「安全な通信」を始めるまでの舞台裏には、7つのやり取りがある。公開鍵・秘密鍵・共通鍵・証明書・ハッシュ値——それぞれの役者がどう動くのかを、実際に手を動かして確かめよう。</p>
+  </div>
 </header>
 
-<main class="patrol-floor">
-
-  <section class="panel tray-panel" aria-label="証拠カード置き場">
-    <div class="panel-head">
-      <h2>証拠カード</h2>
-      <span class="panel-note">カードをタップ→枠をタップで配置／配置後に実行者（クライアント／サーバー）も選択／ドラッグでも配置可</span>
+<section class="role-legend" aria-label="登場人物">
+  <div class="role-card" data-role="client">
+    <span class="role-icon" aria-hidden="true">💻</span>
+    <div class="role-text">
+      <p class="role-name">クライアント</p>
+      <p class="role-desc">あなたのブラウザ。安全にサーバーへつながりたい。</p>
     </div>
-    <ul id="tray" class="tray" aria-live="polite"></ul>
-  </section>
+  </div>
+  <div class="role-card" data-role="server">
+    <span class="role-icon" aria-hidden="true">🖥️</span>
+    <div class="role-text">
+      <p class="role-name">Webサーバー</p>
+      <p class="role-desc">公開鍵と秘密鍵のペアを持つ、通信の相手。</p>
+    </div>
+  </div>
+  <div class="role-card" data-role="ca">
+    <span class="role-icon" aria-hidden="true">🏛️</span>
+    <div class="role-text">
+      <p class="role-name">認証局（CA）</p>
+      <p class="role-desc">サーバーの身元を審査し、証明書に署名する。</p>
+    </div>
+  </div>
+  <div class="role-card" data-role="attacker">
+    <span class="role-icon" aria-hidden="true">🕵️</span>
+    <div class="role-text">
+      <p class="role-name">通信路の盗聴者</p>
+      <p class="role-desc">経路上でパケットを覗き見ようとしている。</p>
+    </div>
+  </div>
+</section>
 
-  <section class="panel timeline-panel" aria-label="通信タイムライン">
-    <div class="panel-head">
-      <h2>接続タイムライン</h2>
-      <div class="controls">
-        <button id="checkBtn" class="btn btn-primary" disabled>検証する</button>
-        <button id="resetBtn" class="btn btn-ghost">やり直す</button>
+<nav class="tab-nav" role="tablist" aria-label="学習タブ">
+  <button class="tab-btn is-active" role="tab" aria-selected="true" aria-controls="panel-1" id="tab-1" data-tab="1">
+    <span class="tab-num">1</span>全体の流れ
+  </button>
+  <button class="tab-btn" role="tab" aria-selected="false" aria-controls="panel-2" id="tab-2" data-tab="2">
+    <span class="tab-num">2</span>証明書と検証
+  </button>
+  <button class="tab-btn" role="tab" aria-selected="false" aria-controls="panel-3" id="tab-3" data-tab="3">
+    <span class="tab-num">3</span>改ざんの検知
+  </button>
+  <button class="tab-btn" role="tab" aria-selected="false" aria-controls="panel-4" id="tab-4" data-tab="4">
+    <span class="tab-num">4</span>鍵交換のしくみ
+  </button>
+</nav>
+
+<main>
+
+<!-- ============ TAB 1 : 全体の流れ ============ -->
+<section class="panel is-active" id="panel-1" role="tabpanel" aria-labelledby="tab-1">
+  <div class="panel-intro">
+    <h2>HTTPとHTTPS、盗聴者から見える景色を比べる</h2>
+    <p>まずはモードを選んで、通信路の上にパケットを走らせてみよう。盗聴者アイコンをクリックすると、その瞬間に流れているデータの中身をのぞける。</p>
+  </div>
+
+  <div class="mode-switch" role="group" aria-label="通信モード切替">
+    <button class="mode-btn is-active" data-mode="http">HTTP（暗号化なし）</button>
+    <button class="mode-btn" data-mode="https">HTTPS（TLSで暗号化）</button>
+  </div>
+
+  <div class="stage" id="t1-stage">
+    <div class="stage-track">
+      <div class="node node-client">💻<span>クライアント</span></div>
+      <div class="node node-attacker" id="t1-attacker" tabindex="0" role="button" aria-label="盗聴者。クリックすると通信を覗き見る">🕵️<span>盗聴者</span></div>
+      <div class="node node-server">🖥️<span>サーバー</span></div>
+      <div class="track-line"></div>
+      <div class="packet" id="t1-packet" hidden></div>
+    </div>
+
+    <div class="peek-box" id="t1-peek" hidden>
+      <p class="peek-label" id="t1-peek-label">盗聴者に見えているデータ</p>
+      <p class="peek-content" id="t1-peek-content"></p>
+    </div>
+  </div>
+
+  <!-- HTTPモード操作 -->
+  <div class="controls" id="t1-http-controls">
+    <button class="btn btn-primary" id="t1-http-send">ログイン情報を送信する</button>
+    <button class="btn btn-outline" id="t1-http-tamper" disabled>盗聴者が中身を書き換える</button>
+    <p class="hint" id="t1-http-status">「送信する」を押すと、平文のままサーバーへ向かう。</p>
+  </div>
+
+  <!-- HTTPSモード操作 -->
+  <div class="controls" id="t1-https-controls" hidden>
+    <div class="step-progress" id="t1-step-progress" aria-hidden="true"></div>
+    <button class="btn btn-primary" id="t1-next-step">最初のステップへ進む</button>
+    <button class="btn btn-outline" id="t1-reset-steps" hidden>最初からやり直す</button>
+  </div>
+
+  <div class="log-panel" id="t1-log" aria-live="polite"></div>
+</section>
+
+<!-- ============ TAB 2 : 証明書と検証 ============ -->
+<section class="panel" id="panel-2" role="tabpanel" aria-labelledby="tab-2">
+  <div class="panel-intro">
+    <h2>その公開鍵、本当にサーバー本人のもの？</h2>
+    <p>サーバーが公開鍵を送ってくるだけでは、途中で悪意ある第三者が「自分の公開鍵」にすり替えてなりすませてしまう。それを防ぐのが認証局（CA）の署名だ。</p>
+  </div>
+
+  <div class="mode-switch" role="group" aria-label="サーバーの種類">
+    <button class="mode-btn is-active" data-server-kind="real">正規のサーバーとして体験する</button>
+    <button class="mode-btn" data-server-kind="fake">なりすましサーバーを演じてみる</button>
+  </div>
+
+  <div class="cert-stage">
+    <div class="cert-actor" data-actor="ca">
+      <span class="cert-actor-icon">🏛️</span>
+      <p>認証局（CA）</p>
+      <button class="btn btn-small" id="t2-issue">証明書を発行する</button>
+    </div>
+
+    <div class="cert-slot" id="t2-cert-slot">
+      <div class="certificate" id="t2-certificate" hidden>
+        <p class="cert-title">🎓 サーバー証明書</p>
+        <dl>
+          <dt>発行先ドメイン</dt><dd id="t2-domain">example-shop.jp</dd>
+          <dt>サーバーの公開鍵</dt><dd class="mono" id="t2-pubkey">—</dd>
+          <dt>CAのデジタル署名</dt><dd class="mono" id="t2-signature">—</dd>
+        </dl>
       </div>
     </div>
-    <ol id="slots" class="slots"></ol>
-  </section>
 
-  <section class="panel diagram-panel" aria-label="通信シミュレーション">
-    <div class="panel-head">
-      <h2>通信シミュレーション</h2>
-      <div id="statusChip" class="status-chip status-idle">待機中</div>
+    <div class="cert-actor" data-actor="server">
+      <span class="cert-actor-icon">🖥️</span>
+      <p id="t2-server-label">Webサーバー</p>
+      <button class="btn btn-small" id="t2-present" disabled>証明書を提示する</button>
     </div>
 
-    <div class="diagram" id="diagram">
-      <div class="node client">
-        <div class="node-icon">💻</div>
-        <div class="node-label">クライアント</div>
-      </div>
+    <div class="cert-actor" data-actor="client">
+      <span class="cert-actor-icon">💻</span>
+      <p>クライアント</p>
+      <button class="btn btn-small" id="t2-verify" disabled>CAの公開鍵で検証する</button>
+    </div>
+  </div>
 
-      <div class="wire-area">
-        <svg id="wireSvg" viewBox="0 0 600 120" preserveAspectRatio="none" aria-hidden="true">
-          <line class="wire-base" x1="0" y1="60" x2="600" y2="60"></line>
-          <line id="wireActive" class="wire-active" x1="0" y1="60" x2="0" y2="60"></line>
-        </svg>
-        <div id="packet" class="packet">🔒</div>
-        <div id="attacker" class="attacker">
-          <div class="attacker-icon">🕵️</div>
-          <div class="attacker-tag" id="attackerTag">なりすまし</div>
-        </div>
-        <div id="lock" class="lock-indicator">🔓</div>
-      </div>
+  <div class="verify-result" id="t2-result" hidden></div>
 
-      <div class="node server">
-        <div class="node-icon">🖥️</div>
-        <div class="node-label">サーバー</div>
-      </div>
+  <div class="browser-mock" id="t2-browser" aria-hidden="true">
+    <div class="browser-bar">
+      <span class="browser-lock" id="t2-browser-lock">🔒</span>
+      <span class="browser-url" id="t2-browser-url">example-shop.jp</span>
+    </div>
+  </div>
+
+  <div class="log-panel" id="t2-log" aria-live="polite"></div>
+</section>
+
+<!-- ============ TAB 3 : 改ざんの検知 ============ -->
+<section class="panel" id="panel-3" role="tabpanel" aria-labelledby="tab-3">
+  <div class="panel-intro">
+    <h2>1文字変わっただけで、ハッシュ値は別人になる</h2>
+    <p>ハッシュ関数は、どんな長さのデータも決まった長さの文字列に変換する。同じデータなら必ず同じ値、少しでも違えばまったく違う値になる——この性質が改ざんの検知に使われる。</p>
+  </div>
+
+  <div class="hash-live">
+    <label for="t3-input">試しに何か入力してみよう</label>
+    <input type="text" id="t3-input" class="text-input" value="金額：1000円" autocomplete="off">
+    <p class="hash-output-label">SHA-256ハッシュ値</p>
+    <p class="hash-output mono" id="t3-hash-live">計算中…</p>
+  </div>
+
+  <div class="panel-divider"></div>
+
+  <div class="panel-intro">
+    <h3>送信 → 改ざん → 検証、を体験する</h3>
+    <p>まず送信データを確定させる。次に「盗聴者」になったつもりでデータを書き換え、最後に受信側で検証してみよう。</p>
+  </div>
+
+  <div class="transmit-stage">
+    <div class="transmit-step">
+      <p class="transmit-label">① 送信データを確定</p>
+      <input type="text" id="t3-original" class="text-input" value="振込先：山田太郎／金額：10000円">
+      <button class="btn btn-small" id="t3-lock">この内容で送信する</button>
+      <p class="hash-output mono" id="t3-sent-hash"></p>
     </div>
 
-    <div id="reportArea" class="report-area" aria-live="polite"></div>
-  </section>
-
-  <section class="panel intel-panel" aria-label="ステップ解説">
-    <div class="panel-head">
-      <h2>捜査ファイル：5つの手順</h2>
+    <div class="transmit-step" id="t3-transit-step" hidden>
+      <p class="transmit-label">② 通信路上（盗聴者になって書き換えてみよう）</p>
+      <input type="text" id="t3-transit" class="text-input">
+      <p class="hint">好きなように書き換えてから、受信側で検証してみよう。</p>
     </div>
-    <div id="intel" class="intel-grid"></div>
-  </section>
+
+    <div class="transmit-step" id="t3-verify-step" hidden>
+      <p class="transmit-label">③ 受信側で検証</p>
+      <button class="btn btn-primary" id="t3-check">ハッシュ値を照合する</button>
+      <p class="hash-output mono" id="t3-received-hash"></p>
+      <div class="verify-result" id="t3-result" hidden></div>
+    </div>
+  </div>
+
+  <button class="btn btn-outline" id="t3-reset" hidden>最初からやり直す</button>
+</section>
+
+<!-- ============ TAB 4 : 鍵交換のしくみ ============ -->
+<section class="panel" id="panel-4" role="tabpanel" aria-labelledby="tab-4">
+  <div class="panel-intro">
+    <h2>なぜ公開鍵暗号だけで済ませないのか</h2>
+    <p>公開鍵暗号は安全だが計算が重く遅い。そこで実際の通信では「鍵の受け渡し」だけに公開鍵暗号を使い、その後の大量のデータのやり取りは高速な共通鍵暗号に切り替える——このハイブリッド方式を体験しよう。</p>
+  </div>
+
+  <div class="speed-compare">
+    <button class="btn btn-primary" id="t4-run-speed">速度をイメージで比較する</button>
+    <div class="speed-bars">
+      <div class="speed-row">
+        <p class="speed-name">🔐 公開鍵暗号（非対称）でページ全体を暗号化</p>
+        <div class="speed-track"><div class="speed-fill speed-fill--slow" id="t4-bar-slow"></div></div>
+        <p class="speed-time" id="t4-time-slow">—</p>
+      </div>
+      <div class="speed-row">
+        <p class="speed-name">🔑 共通鍵暗号（対称）でページ全体を暗号化</p>
+        <div class="speed-track"><div class="speed-fill speed-fill--fast" id="t4-bar-fast"></div></div>
+        <p class="speed-time" id="t4-time-fast">—</p>
+      </div>
+    </div>
+    <p class="hint">※ 処理時間はしくみの違いをイメージしやすくするための演出であり、実測値ではありません。</p>
+  </div>
+
+  <div class="panel-divider"></div>
+
+  <div class="panel-intro">
+    <h3>金庫を使った鍵交換パズル</h3>
+    <p>サーバーの公開鍵を「誰でも施錠できるが、サーバーの秘密鍵でしか開けられない金庫」だと考えてみよう。</p>
+  </div>
+
+  <div class="stage" id="t4-stage">
+    <div class="stage-track stage-track--wide">
+      <div class="node node-client">💻<span>クライアント</span></div>
+      <div class="node node-attacker">🕵️<span>盗聴者</span></div>
+      <div class="node node-server">🖥️<span>サーバー</span></div>
+      <div class="track-line"></div>
+      <div class="safe-box" id="t4-safebox" hidden>🔒</div>
+    </div>
+    <div class="key-holders">
+      <div class="key-slot" id="t4-key-client"></div>
+      <div class="key-slot" id="t4-key-attacker"></div>
+      <div class="key-slot" id="t4-key-server"></div>
+    </div>
+  </div>
+
+  <div class="controls">
+    <div class="step-progress" id="t4-step-progress" aria-hidden="true"></div>
+    <button class="btn btn-primary" id="t4-next-step">鍵交換を始める</button>
+    <button class="btn btn-outline" id="t4-reset-steps" hidden>最初からやり直す</button>
+  </div>
+
+  <div class="log-panel" id="t4-log" aria-live="polite"></div>
+</section>
 
 </main>
 
-<footer class="foot-note">
-  <p>教材用シミュレーション教材／実際のTLSプロトコルを単純化して表現しています。</p>
+<footer class="site-footer">
+  <p>高校「情報Ⅰ」学習教材／すべての鍵・証明書・ハッシュ値はデモ用に生成された架空のものです。</p>
 </footer>
 
 <script src="script.js"></script>
